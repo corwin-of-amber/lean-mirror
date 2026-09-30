@@ -22,7 +22,7 @@ class GameKeeper {
     }
   }
 
-  current: {gameId?: string, worldId: string, levelId: number} | undefined
+  _current: {gameId?: string, worldId: string, levelId: number} | undefined
   cursor = { /* dummy position */
     textDocument: {uri: ''},
     position: {line: 0, character: 0}
@@ -43,10 +43,37 @@ class GameKeeper {
     this.gameData = await readGameData(volume);
   }
 
-  navigate(leanSource: string) {
+  get current() {
+    return this._current ??=
+      this.extractCurrent(this.editor.view.state.sliceDoc());
+  }
+  set current(v) { this._current = v; }
+
+  private extractCurrent(leanSource: string) {
     let mo = leanSource.match(/Runner "(.*?)" "(.*?)" (\d+)/);
-    this.current = mo ? {worldId: mo[2]!, levelId: +mo[3]!} : undefined;
+    return mo ? {worldId: mo[2]!, levelId: +mo[3]!} : undefined;
+  }
+
+  navigate(leanSource: string) {
+    this.current = this.extractCurrent(leanSource);
     this.debouncedPoke();
+  }
+
+  navigateTo(locator: {worldId?: string, levelId?: number}) {
+    locator.worldId ??= this.current?.worldId!;
+    locator.levelId ??= 1;
+
+    let doc = this.editor.view.state.sliceDoc(),
+        mo = doc.match(/^Runner /m),
+        runCommand = `Runner "MyGame" "${locator.worldId}" ${locator.levelId} (difficulty := 1) (inventory := []) := by\n  \n`;
+    if (mo && locator.worldId) {
+      this.editor.view.dispatch({
+        changes: {from: mo.index!, to: doc.length, insert: runCommand},
+        selection: {anchor: mo.index! + runCommand.length - 1}
+      });
+      this.current = locator as typeof this.current /* both fields must be defined by now */;
+      setTimeout(() => this.editor.view.focus(), 150);
+    }
   }
 
   async rpcCall(method: string, params: any, at = this.cursor) {
@@ -62,6 +89,8 @@ class GameKeeper {
 
   async poke() {
     if (!this.current) return;
+
+    this.updateLevelSelector(this.gameData?.game?.worldSize[this.current.worldId] ?? 0, this.current.levelId);
 
     let state: any = await this.rpcCall('Game.getProofState', this.current);
     this.state = state;
@@ -105,7 +134,31 @@ class GameKeeper {
     if (state.completed) this.hints.scrollTo({top: 9e9});
 
     return state;
-  }  
+  }
+
+  /**
+   * Creates a list of links for jumping to levels.
+   * Use of UI framework is severely needed. But this is just for fun.
+   * @param numLevels 
+   */
+  updateLevelSelector(numLevels = 10, current?: number) {
+    let container = document.querySelector<HTMLDivElement>('.editor-platform-panel-secondary .editor-platform-panel-head'),
+        bar = container?.querySelector('div.game--level-selector');
+    if (bar) bar.innerHTML = ''; else {
+      bar = document.createElement('div'); bar.classList.add('game--level-selector');
+      container?.append(bar);
+    }
+    for (let i = 1; i <= numLevels; i++) {
+      let a = document.createElement('a');
+      a.innerText = i.toString();
+      if (i == current) a.classList.add('current');
+      else {
+        a.setAttribute('href', `#${i}`);
+        a.addEventListener('click', () => this.navigateTo({levelId: i}));
+      }
+      bar.append(a);
+    }
+  }
 }
 
 type Level = any;
