@@ -13,6 +13,7 @@ class WasiProcessTransport extends EventEmitter implements Transport {
     workerProcess: ChildProcess
     jts: JSONRPCTransportStream
     handlers: ((message: string) => void)[] = []
+    trace = false
 
     rpc: { sessionId?: string } = {}
 
@@ -64,12 +65,12 @@ class WasiProcessTransport extends EventEmitter implements Transport {
     }
 
     _send(message: string) {
-        console.log("↖️", message);
+        if (this.trace) console.log("↖️", message);
         this.workerProcess?.write(this.jts.formatMessage(message));
     }
 
     _received(message: string) {
-        console.log("↘️", message);
+        if (this.trace) console.log("↘️", message);
         for (let h of this.handlers) h(message);
     }
 }
@@ -122,7 +123,7 @@ class LeanWorkerWASI extends EventEmitter {
 
     this.proc = await this.wasik.runWasix('/usr/bin/lean', {program: 'lean', args: ['--worker'], stdin: {}});
     this.transport = new WasiProcessTransport(this.proc);
-    this.transport.on('terminated', () => setTimeout(() => this.restart(), 5000));  // auto-restart
+    this.transport.on('terminated', () => this.restart());  // auto-restart
 
     forwardStderr(this.proc);
     return this as this & {transport: WasiProcessTransport};
@@ -131,6 +132,8 @@ class LeanWorkerWASI extends EventEmitter {
   async restart() {
     let msg = document.querySelector<HTMLDivElement>('.editor-platform-status-card');
     msg!.innerText = 'Restarting the LSP worker...';
+
+    this.wasik?.reboot();
 
     let self = await this.start();
     self.transport.on('initialized', () =>
@@ -162,7 +165,7 @@ class LeanWorkerWASI extends EventEmitter {
     });
 
     wasik.vfs.options.readonly = true;
-    for (let pkg of ['busybox', 'lean', 'sample-programs']) {
+    for (let pkg of ['lean', 'sample-programs']) {
       if (distro[pkg]) await pm.install(distro[pkg]);
     }
 
