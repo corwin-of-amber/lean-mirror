@@ -90,8 +90,6 @@ class GameKeeper {
   async poke() {
     if (!this.current) return;
 
-    this.updateLevelSelector(this.gameData?.game?.worldSize[this.current.worldId] ?? 0, this.current.levelId);
-
     let state: any = await this.rpcCall('Game.getProofState', this.current);
     this.state = state;
 
@@ -132,6 +130,8 @@ class GameKeeper {
     }
 
     if (state.completed) this.hints.scrollTo({top: 9e9});
+
+    this.updateLevelSelector(this.gameData?.game?.worldSize[this.current.worldId] ?? 0, this.current.levelId);
 
     return state;
   }
