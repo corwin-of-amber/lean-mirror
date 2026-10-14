@@ -1,6 +1,7 @@
 import {
   renderEditorPlatformWorkspaceShell,
 } from "@leanprover/editor-platform";
+import { StateEffect } from "@codemirror/state"
 
 import { mountLeanEditor } from "./publicLeanEditor";
 import './style.css';
@@ -8,6 +9,7 @@ import './style.css';
 import { LeanWorkerWASI } from "./transport/lsp-wasi-process";
 
 import { GameKeeper } from "./extra/game-server";
+import backslashReplace from "./extra/backslash";
 
 
 const documentUri = 'wasi:/home/player.lean',
@@ -85,8 +87,9 @@ async function main() {
     rootUri
   });
 
-
-
+  editor.view.dispatch({
+    effects: StateEffect.appendConfig.of(backslashReplace()),
+  })
 
   Object.assign(window, { shell, editor });
 
