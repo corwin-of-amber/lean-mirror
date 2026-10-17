@@ -18,6 +18,11 @@ const documentUri = 'wasi:/home/player.lean',
 
 
 async function main() {
+  if (!global.process?.nextTick)
+    global.process = Object.assign(require('process'), {
+      nextTick: (f: Function, ...a: any[]) => { Promise.resolve().then(() => f(...a)) },
+    })
+
   initializeKeyBindings();
 
   const app = requiredElement<HTMLElement>("#app");
@@ -123,7 +128,7 @@ async function main() {
   
 
 async function fetchDocument(uri: string) {
-  return (await fetch(uri.replace(/.*[/]/, '/data/'))).text();
+  return (await fetch(uri.replace(/.*[/]/, '/assets/scribble/'))).text();
 }
 
 function requiredElement<ElementType extends HTMLElement>(selector: string): ElementType {

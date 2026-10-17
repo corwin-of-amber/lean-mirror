@@ -3,6 +3,11 @@
     "version": "0.1.0",
     "main": "build/kremlin/index.html",
     "type": "module",
+    "browser": {
+        "mass-confusion": false,
+        "codemirror-lean4-lsp": "./node_modules/codemirror-lean4-lsp/src",
+        "@codemirror/lsp-client": "./node_modules/@codemirror/lsp-client/src"
+    },
     "dependencies": {
         "@codemirror/lsp-client": "^6.2.5",
         "@codemirror/state": "^6.7.1",
@@ -22,7 +27,18 @@
         "wasi-kernel": "file:../../../../../wasi-kernel/wasi-kernel-3"
     },
     "devDependencies": {
+        "buffer": "^6.0.3",
+        "css-loader": "^7.1.5",
+        "path-browserify": "^1.0.1",
+        "process": "^0.11.10",
         "remark": "^15.0.1",
-        "typescript": "^6.0.3"
+        "style-loader": "^4.0.0",
+        "ts-loader": "^9.6.2",
+        "typescript": "^6.0.3",
+        "webpack-cli": "^7.2.3"
+    },
+    "allowScripts": {
+        "esbuild": true,
+        "fsevents": true
     }
 }

@@ -1,4 +1,7 @@
 .*.swp
 node_modules
 /build
+/dist
+/assets/**/*.tar
+/assets/**/*.wasm
 /_npmlink
